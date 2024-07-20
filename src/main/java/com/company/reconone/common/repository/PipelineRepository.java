@@ -8,4 +8,6 @@ import java.util.List;
 
 public interface PipelineRepository extends JpaRepository<Pipeline, PipelineId> {
     List<Pipeline> findByInstanceId(String instanceId);
+
+    void deleteAllByInstanceId(String instanceId);
 }

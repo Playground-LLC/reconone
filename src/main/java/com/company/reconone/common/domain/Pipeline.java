@@ -20,6 +20,15 @@ public class Pipeline {
 
     private String status;
 
+    public Pipeline() {
+    }
+
+    public Pipeline(String pipelineId, String instanceId, String status) {
+        this.pipelineId = pipelineId;
+        this.instanceId = instanceId;
+        this.status = status;
+    }
+
     // Getters and setters
     public String getPipelineId() {
         return pipelineId;

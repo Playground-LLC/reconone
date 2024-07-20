@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Pipelines</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</head>
+<body>
+<div class="container mt-5">
+    <h1 class="mb-4">Pipeline Management</h1>
+    <div th:if="${message}" class="alert alert-info">
+        <p th:text="${message}"></p>
+    </div>
+    <table class="table table-striped">
+        <thead class="thead-dark">
+        <tr>
+            <th>Pipeline ID</th>
+            <th>Status</th>
+            <th>Actions</th>
+            <th>Statistics</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="pipeline : ${pipelines}">
+            <td th:text="${pipeline.pipelineId}"></td>
+            <td th:text="${pipeline.status}"></td>
+            <td>
+                <form th:action="@{'/pipelines/start/' + ${pipeline.pipelineId}}" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-success btn-sm">Start</button>
+                </form>
+                <form th:action="@{'/pipelines/stop/' + ${pipeline.pipelineId}}" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-danger btn-sm">Stop</button>
+                </form>
+            </td>
+            <td>
+                <a th:href="@{'/pipelines/statistics/' + ${pipeline.pipelineId}}" class="btn btn-info btn-sm">View</a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+</body>
+</html>

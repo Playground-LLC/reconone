@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Pipeline Statistics</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</head>
+<body>
+<div class="container mt-5">
+    <h1 class="mb-4">Pipeline Statistics</h1>
+    <a href="/pipelines" class="btn btn-secondary mb-4">Back to Pipelines</a>
+    <table class="table table-striped">
+        <thead class="thead-dark">
+        <tr>
+            <th>File Name</th>
+            <th>File Size</th>
+            <th>Start Time</th>
+            <th>End Time</th>
+            <th>Time Taken (ms)</th>
+            <th>Records Processed</th>
+            <th>Records Skipped</th>
+            <th>Status</th>
+            <th>Error Stack Trace</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="info : ${processingInfos}">
+            <td th:text="${info.fileName}"></td>
+            <td th:text="${info.fileSize}"></td>
+            <td th:text="${#dates.format(info.startTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
+            <td th:text="${#dates.format(info.endTime, 'yyyy-MM-dd HH:mm:ss')}"></td>
+            <td th:text="${info.timeTaken}"></td>
+            <td>
+                <ul>
+                    <li th:each="entry : ${info.recordsProcessed}">
+                        <span th:text="${entry.key} + ': ' + ${entry.value}"></span>
+                    </li>
+                </ul>
+            </td>
+            <td>
+                <ul>
+                    <li th:each="entry : ${info.recordsSkipped}">
+                        <span th:text="${entry.key} + ': ' + ${entry.value}"></span>
+                    </li>
+                </ul>
+            </td>
+            <td th:text="${info.status}"></td>
+            <td>
+                <pre th:text="${info.errorStackTrace}"></pre>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+</body>
+</html>

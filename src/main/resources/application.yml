@@ -18,6 +18,9 @@ spring:
   liquibase:
     enabled: true
     change-log: classpath:db/changelog/db.changelog-master.xml
+  thymeleaf:
+    cache: false
+    prefix: classpath:/templates/
 
 server:
     port: 8080
@@ -31,6 +34,7 @@ camel:
     name: etlApplication
     auto-startup: false
     routes-collector-enabled: false
+    tracing: false
   springboot:
     main-run-controller: true
 
@@ -43,7 +47,7 @@ pipelines:
   # Check if auto start of pipeline is to read from database or config. Possible value is config or database
   startPriority: config
   # List of pipelines to auto start
-  start: pipeline1
+  start: pipeline1, pipeline2, pipeline3
 
 # Configuration for pipeline1
 pipeline1:

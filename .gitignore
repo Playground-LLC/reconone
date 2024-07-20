@@ -3,7 +3,12 @@ target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+
+### Sample pipeline folders ###
 inputFolder/
+inputFolderChunk/
+outputFolder/
+error/
 
 ### STS ###
 .apt_generated

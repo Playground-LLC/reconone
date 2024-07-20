@@ -34,6 +34,11 @@ public class Pipeline1Processor extends BaseFileProcessor {
         // Process the exchange
         saveToDatabase(exchange);
         saveToMongo(exchange);
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
         sendToKafka(exchange);
     }
 
@@ -44,6 +49,7 @@ public class Pipeline1Processor extends BaseFileProcessor {
     }
 
     public void saveToMongo(Exchange exchange) {
+        incrementProcessed("saveToMongo");
         String data = exchange.getIn().getBody(String.class);
         mongoTemplate.save(new TransformedData(data));
         logger.info("Saved to MongoDB");
@@ -52,6 +58,5 @@ public class Pipeline1Processor extends BaseFileProcessor {
     public void sendToKafka(Exchange exchange) {
         incrementSkipped("sendToKafka");
         etlKafkaService.sendToKafka(exchange.getIn().getBody(String.class));
-        logger.info("Sent message to Kafka");
     }
 }

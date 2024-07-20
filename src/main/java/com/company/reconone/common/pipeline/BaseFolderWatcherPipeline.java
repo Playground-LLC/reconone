@@ -1,10 +1,12 @@
 package com.company.reconone.common.pipeline;
 
+import com.company.reconone.common.processors.ExceptionFileLogger;
 import com.company.reconone.common.processors.MdcProcessor;
 import com.company.reconone.common.processors.ProcessedFileLogger;
 import com.company.reconone.common.processors.StartFileLogger;
 import org.apache.camel.AggregationStrategy;
 import org.apache.camel.Exchange;
+import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,7 +31,7 @@ import org.springframework.stereotype.Component;
 @Component
 public abstract class BaseFolderWatcherPipeline extends RouteBuilder {
 
-    private static final long DELAY_READ_FILE = 5000;
+    private static final long DELAY_READ_FILE = 5000; // Delay between file reads
 
     @Value("${instance.id}")
     protected String instanceId;
@@ -41,72 +43,178 @@ public abstract class BaseFolderWatcherPipeline extends RouteBuilder {
     protected ProcessedFileLogger processedFileLogger;
     @Autowired
     private ApplicationContext applicationContext;
-
-    abstract public String getPipelineName();
-    abstract public Object getProcessor();
-    abstract public String sourceFolder();
-
-    public String destinationFolder() { return "processed"; }
-    public String errorFolder() { return "error"; }
-    public String fileExtension() { return null; }
-    public String splitter() { return "\n"; }
-    public int chunkSize() { return 0; }
-
+    @Autowired
+    protected ExceptionFileLogger exceptionFileLogger;
 
     /**
-     * Configures the Camel route that watches a folder for new files, processes them, and moves them to a different folder.
+     * Get the name of the pipeline.
+     *
+     * @return pipeline name
+     */
+    abstract public String getPipelineName();
+
+    /**
+     * Get the processor to handle file processing.
+     *
+     * @return processor instance
+     */
+    abstract public Object getProcessor();
+
+    /**
+     * Get the source folder to watch for new files.
+     *
+     * @return source folder path
+     */
+    abstract public String sourceFolder();
+
+    /**
+     * Get the folder for files in progress.
+     *
+     * @return in-progress folder path
+     */
+    public String processingFolder() { return "inprogress"; }
+
+    /**
+     * Get the destination folder for processed files.
+     *
+     * @return destination folder path
+     */
+    public String destinationFolder() { return "processed"; }
+
+    /**
+     * Get the folder for files with errors.
+     *
+     * @return error folder path
+     */
+    public String errorFolder() { return "error"; }
+
+    /**
+     * Get the file extension to watch for.
+     *
+     * @return file extension
+     */
+    public String fileExtension() { return null; }
+
+    /**
+     * Get the splitter for chunking files.
+     *
+     * @return splitter string
+     */
+    public String splitter() { return "\n"; }
+
+    /**
+     * Get the chunk size for splitting files.
+     *
+     * @return chunk size
+     */
+    public int chunkSize() { return 0; }
+    /**
+     * Configure the Camel route to watch, process, and move files.
      */
     @Override
     public void configure() {
+        configureExceptionHandling();
+        configureRoute();
+    }
+
+    /**
+     * Configure exception handling to move files to the error folder on failure.
+     */
+    void configureExceptionHandling() {
         onException(Exception.class)
                 .handled(true)
                 .log("Error processing file: ${header.CamelFileName}")
-                .to("file:" + errorFolder() + "?fileName=${header.CamelFileName}");
+                .log(LoggingLevel.ERROR, "Stacktrace: ${exception.stacktrace}")
+                .process(exceptionFileLogger)
+                .to(buildErrorFolderUri());
+    }
 
+    /**
+     * Configure the route to watch a folder, process files, and move them to the destination folder.
+     */
+    private void configureRoute() {
         if (chunkSize() > 0) {
-            String beanName = applicationContext.getBeanNamesForType(getProcessor().getClass())[0];
-            from(constructFromRoute())
-                    .routeId(getPipelineName())
-                    .process(startFileLogger)
-                    .process(mdcProcessor)
-                    .log("Processing file: ${header.CamelFileName}")
-                    .split(body().tokenize(splitter(), chunkSize(), false), new FileChunkAggregator())
-                    .to("bean:" + beanName + "?method=process")
-                    .end()
-                    .process(processedFileLogger)
-                    .end();
+            configureChunkedRoute();
         } else {
-            from(constructFromRoute())
-                    .routeId(getPipelineName())
-                    .process(startFileLogger)
-                    .process(mdcProcessor)
-                    .log("Processing file: ${header.CamelFileName}")
-                    .bean(getProcessor(), "process")
-                    .process(processedFileLogger)
-                    .end();
+            configureSimpleRoute();
         }
     }
 
+    /**
+     * Configure a route for chunked file processing.
+     */
+    private void configureChunkedRoute() {
+        String beanName = applicationContext.getBeanNamesForType(getProcessor().getClass())[0];
+        from(constructFromRoute())
+                .routeId(getPipelineName())
+                .process(startFileLogger)
+                .process(mdcProcessor)
+                .log("Processing file: ${header.CamelFileName}")
+                .split(body().tokenize(splitter(), chunkSize(), false), new FileChunkAggregator())
+                .to("bean:" + beanName + "?method=process")
+                .end()
+                .process(processedFileLogger)
+                .to(buildDestinationFolderUri())
+                .end();
+    }
+
+    /**
+     * Configure a simple route for file processing.
+     */
+    private void configureSimpleRoute() {
+        from(constructFromRoute())
+                .routeId(getPipelineName())
+                .process(startFileLogger)
+                .process(mdcProcessor)
+                .log("Processing file: ${header.CamelFileName}")
+                .bean(getProcessor(), "process")
+                .process(processedFileLogger)
+                .to(buildDestinationFolderUri());
+    }
+
+    /**
+     * Construct the URI for the route's "from" endpoint.
+     *
+     * @return constructed URI
+     */
     String constructFromRoute() {
-        String route = "file:" + sourceFolder() + "?delay=" + DELAY_READ_FILE + "&sortBy=file:modified";
-
-        if (destinationFolder() != null && !destinationFolder().isBlank()) {
-            route += "&move=" + destinationFolder() + "/${file:name}";
+        StringBuilder route = new StringBuilder("file:" + sourceFolder() + "?delay=" + DELAY_READ_FILE + "&sortBy=file:modified&delete=true");
+        if (processingFolder() != null && !processingFolder().isBlank()) {
+            route.append("&preMove=").append(processingFolder());
         }
-
         if (fileExtension() != null && !fileExtension().isBlank()) {
-            route += "&include=.*\\." + fileExtension();
+            route.append("&include=.*\\.").append(fileExtension());
         }
-
-        return route;
+        return route.toString();
     }
 
+    /**
+     * Build the URI for the destination folder.
+     *
+     * @return constructed URI
+     */
+    String buildDestinationFolderUri() {
+        return "file:" + destinationFolder()
+                + "?delay=3000&fileExist=Move&moveExisting=${file:name.noext}-${date:now:yyyyMMddHHmmssSSS}.${file:ext}";
+    }
+
+    /**
+     * Build the URI for the error folder.
+     *
+     * @return constructed URI
+     */
+    String buildErrorFolderUri() {
+        return "file:" + errorFolder()
+                + "?delay=3000&fileExist=Move&moveExisting=${file:name.noext}-${date:now:yyyyMMddHHmmssSSS}.${file:ext}";
+    }
+
+    /**
+     * Aggregator class for file chunk processing.
+     */
     public static class FileChunkAggregator implements AggregationStrategy {
         @Override
         public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
             return oldExchange;
         }
     }
-
-
 }

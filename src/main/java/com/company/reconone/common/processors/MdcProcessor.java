@@ -5,6 +5,8 @@ import org.apache.camel.Processor;
 import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 
+import java.util.UUID;
+
 /**
  * Processor that adds the pipelineId to the MDC context. The pipelineId is the ID of the pipeline that is processing the file.
  *
@@ -17,6 +19,7 @@ public class MdcProcessor implements Processor {
     public void process(Exchange exchange) {
         String pipelineId = exchange.getFromRouteId();
         MDC.put("pipelineId", pipelineId);
+        MDC.put("pipelineProcessId", UUID.randomUUID().toString());
     }
 }
 
