@@ -15,9 +15,16 @@ spring:
       hibernate:
         show_sql: true
         format_sql: true
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.xml
 
 server:
     port: 8080
+
+kafka:
+  topic:
+    processedData: processed-data
 
 camel:
   main:
@@ -32,7 +39,7 @@ instance:
 
 pipelines:
   # List of pipelines to enable for this VM instance
-  enabled: pipeline1, pipeline2
+  enabled: pipeline1, pipeline2, pipeline3
   # Check if auto start of pipeline is to read from database or config. Possible value is config or database
   startPriority: config
   # List of pipelines to auto start
@@ -50,6 +57,13 @@ pipeline2:
   source:
     kafka:
       topic: myTopic
+
+# Configuration for pipeline3
+pipeline3:
+  source:
+    folder: inputFolderChunk
+  target:
+    folder: outputFolderChunk
 
 management:
   endpoint:

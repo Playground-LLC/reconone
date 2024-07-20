@@ -3,9 +3,12 @@ package com.company.reconone.common.pipeline;
 import com.company.reconone.common.processors.MdcProcessor;
 import com.company.reconone.common.processors.ProcessedFileLogger;
 import com.company.reconone.common.processors.StartFileLogger;
+import org.apache.camel.AggregationStrategy;
+import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 /**
@@ -26,6 +29,8 @@ import org.springframework.stereotype.Component;
 @Component
 public abstract class BaseFolderWatcherPipeline extends RouteBuilder {
 
+    private static final long DELAY_READ_FILE = 5000;
+
     @Value("${instance.id}")
     protected String instanceId;
     @Autowired
@@ -34,18 +39,18 @@ public abstract class BaseFolderWatcherPipeline extends RouteBuilder {
     protected StartFileLogger startFileLogger;
     @Autowired
     protected ProcessedFileLogger processedFileLogger;
+    @Autowired
+    private ApplicationContext applicationContext;
 
+    abstract public String getPipelineName();
     abstract public Object getProcessor();
-
     abstract public String sourceFolder();
 
-    public String destinationFolder() {
-        return "processed";
-    }
-
-    public String fileExtension() {
-        return "txt";
-    }
+    public String destinationFolder() { return "processed"; }
+    public String errorFolder() { return "error"; }
+    public String fileExtension() { return null; }
+    public String splitter() { return "\n"; }
+    public int chunkSize() { return 0; }
 
 
     /**
@@ -53,13 +58,55 @@ public abstract class BaseFolderWatcherPipeline extends RouteBuilder {
      */
     @Override
     public void configure() {
-        from("file:" + sourceFolder() + "?move=" + destinationFolder() + "/${file:name}&delay=5000&include=.*\\." + fileExtension() + "&sortBy=file:modified")
-                .routeId("pipeline1")
-                .process(startFileLogger)
-                .process(mdcProcessor)
-                .log("Processing file: ${header.CamelFileName}")
-                .bean(getProcessor(), "process")
-                .process(processedFileLogger)
-                .end();
+        onException(Exception.class)
+                .handled(true)
+                .log("Error processing file: ${header.CamelFileName}")
+                .to("file:" + errorFolder() + "?fileName=${header.CamelFileName}");
+
+        if (chunkSize() > 0) {
+            String beanName = applicationContext.getBeanNamesForType(getProcessor().getClass())[0];
+            from(constructFromRoute())
+                    .routeId(getPipelineName())
+                    .process(startFileLogger)
+                    .process(mdcProcessor)
+                    .log("Processing file: ${header.CamelFileName}")
+                    .split(body().tokenize(splitter(), chunkSize(), false), new FileChunkAggregator())
+                    .to("bean:" + beanName + "?method=process")
+                    .end()
+                    .process(processedFileLogger)
+                    .end();
+        } else {
+            from(constructFromRoute())
+                    .routeId(getPipelineName())
+                    .process(startFileLogger)
+                    .process(mdcProcessor)
+                    .log("Processing file: ${header.CamelFileName}")
+                    .bean(getProcessor(), "process")
+                    .process(processedFileLogger)
+                    .end();
+        }
     }
+
+    String constructFromRoute() {
+        String route = "file:" + sourceFolder() + "?delay=" + DELAY_READ_FILE + "&sortBy=file:modified";
+
+        if (destinationFolder() != null && !destinationFolder().isBlank()) {
+            route += "&move=" + destinationFolder() + "/${file:name}";
+        }
+
+        if (fileExtension() != null && !fileExtension().isBlank()) {
+            route += "&include=.*\\." + fileExtension();
+        }
+
+        return route;
+    }
+
+    public static class FileChunkAggregator implements AggregationStrategy {
+        @Override
+        public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
+            return oldExchange;
+        }
+    }
+
+
 }

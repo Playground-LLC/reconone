@@ -1,0 +1,5 @@
+pipeline1:
+  source:
+    folder: inputFolder
+  target:
+    folder: outputFolder

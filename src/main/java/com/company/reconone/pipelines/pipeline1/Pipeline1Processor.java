@@ -1,13 +1,31 @@
 package com.company.reconone.pipelines.pipeline1;
 
 import com.company.reconone.common.processors.BaseFileProcessor;
+import com.company.reconone.integration.ETLKafkaService;
+import com.company.reconone.mongo.TransformedData;
+import com.company.reconone.service.ProcessedDataService;
 import org.apache.camel.Exchange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
 @Component
 public class Pipeline1Processor extends BaseFileProcessor {
+
+    @Autowired
+    private ProcessedDataService processedDataService;
+
+    @Autowired
+    private MongoTemplate mongoTemplate;
+
+    @Autowired
+    private KafkaTemplate<String, String> kafkaTemplate;
+
+    @Autowired
+    private ETLKafkaService etlKafkaService;
 
     private static final Logger logger = LoggerFactory.getLogger(Pipeline1Processor.class);
 
@@ -21,20 +39,19 @@ public class Pipeline1Processor extends BaseFileProcessor {
 
     public void saveToDatabase(Exchange exchange) {
         incrementProcessed("saveToDatabase");
-
-        logger.info("Saving to MariaDB");
+        processedDataService.saveProcessedData(exchange.getIn().getBody(String.class));
+        logger.info("Saved to MariaDB");
     }
 
     public void saveToMongo(Exchange exchange) {
-        incrementProcessed("saveToMongo");
-
-        logger.info("Saving to Mongodb");
+        String data = exchange.getIn().getBody(String.class);
+        mongoTemplate.save(new TransformedData(data));
+        logger.info("Saved to MongoDB");
     }
 
     public void sendToKafka(Exchange exchange) {
-        incrementSkipped("saveToMongo");
-
-        String message = exchange.getIn().getBody(String.class);
-        logger.info("Sent message to Kafka: {}", message);
+        incrementSkipped("sendToKafka");
+        etlKafkaService.sendToKafka(exchange.getIn().getBody(String.class));
+        logger.info("Sent message to Kafka");
     }
 }

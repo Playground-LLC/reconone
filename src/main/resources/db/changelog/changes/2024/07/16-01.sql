@@ -1,0 +1,4 @@
+CREATE TABLE processed_data (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    data LONGTEXT
+);
