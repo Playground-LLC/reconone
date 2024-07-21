@@ -19,7 +19,7 @@ import static com.company.reconone.common.processors.CommonConstants.*;
  */
 @Component
 public class ProcessedFileLogger implements Processor {
-    private static final Logger logger = LoggerFactory.getLogger(ProcessedFileLogger.class);
+    static Logger logger = LoggerFactory.getLogger(ProcessedFileLogger.class);
 
     private final FileProcessingRepository fileProcessingRepository;
 

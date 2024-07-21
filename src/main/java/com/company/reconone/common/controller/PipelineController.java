@@ -7,6 +7,7 @@ import com.company.reconone.common.domain.ProcessingInfo;
 import com.company.reconone.common.repository.FileProcessingRepository;
 import com.company.reconone.common.repository.MessageProcessingRepository;
 import com.company.reconone.common.repository.PipelineRepository;
+import com.company.reconone.common.service.PipelineService;
 import lombok.RequiredArgsConstructor;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Route;
@@ -32,9 +33,8 @@ import java.util.stream.Collectors;
 public class PipelineController {
 
     private final CamelContext camelContext;
-    private final PipelineRepository pipelineStatusRepository;
-    private final FileProcessingRepository fileProcessingRepository;
-    private final MessageProcessingRepository messageProcessingRepository;
+    private final PipelineService pipelineService;
+
     Logger log = LoggerFactory.getLogger(PipelineController.class);
     @Value("${instance.id}")
     private String instanceId;
@@ -119,12 +119,12 @@ public class PipelineController {
      * @param status     Pipeline status
      */
     private void updatePipelineStatus(String pipelineId, String status) {
-        Pipeline pipelineStatus = pipelineStatusRepository.findById(new PipelineId(pipelineId, instanceId))
+        Pipeline pipelineStatus = pipelineService.findPipelineById(new PipelineId(pipelineId, instanceId))
                 .orElse(new Pipeline());
         pipelineStatus.setPipelineId(pipelineId);
         pipelineStatus.setInstanceId(instanceId);
         pipelineStatus.setStatus(status);
-        pipelineStatusRepository.save(pipelineStatus);
+        pipelineService.savePipeline(pipelineStatus);
     }
 
     /**
@@ -136,8 +136,8 @@ public class PipelineController {
     @GetMapping("/statistics/{pipelineId}")
     public String getPipelineStatistics(@PathVariable String pipelineId, Model model) {
         List<ProcessingInfo> processingInfos = new ArrayList<>();
-        processingInfos.addAll(fileProcessingRepository.findAllByPipelineId(pipelineId));
-        processingInfos.addAll(messageProcessingRepository.findAllByPipelineId(pipelineId));
+        processingInfos.addAll(pipelineService.findFileProcessingByPipelineId(pipelineId));
+        processingInfos.addAll(pipelineService.findMessageProcessingByPipelineId(pipelineId));
         model.addAttribute("processingInfos", processingInfos);
 
         return "pipelineStatistics";

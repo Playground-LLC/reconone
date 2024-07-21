@@ -9,6 +9,7 @@ inputFolder/
 inputFolderChunk/
 outputFolder/
 error/
+outputFolderChunk
 
 ### STS ###
 .apt_generated

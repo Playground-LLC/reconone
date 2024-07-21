@@ -20,7 +20,7 @@ import static com.company.reconone.common.processors.CommonConstants.*;
  */
 @Component
 public class StartFileLogger implements Processor {
-    private static final Logger logger = LoggerFactory.getLogger(StartFileLogger.class);
+    static Logger logger = LoggerFactory.getLogger(StartFileLogger.class);
 
     private final FileProcessingRepository fileProcessingRepository;
     private final String instanceId;
@@ -60,7 +60,7 @@ public class StartFileLogger implements Processor {
             fileProcessingInfo.setPipelineId(exchange.getFromRouteId());
             fileProcessingInfo.setInstanceId(instanceId);
 
-            fileProcessingRepository.save(fileProcessingInfo);
+            fileProcessingInfo = fileProcessingRepository.save(fileProcessingInfo);
 
             setExchangeProperty(exchange, FILE_PROCESSING_ID_PROPERTY, fileProcessingInfo.getId());
         } catch (Exception e) {
