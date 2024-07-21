@@ -1,10 +1,18 @@
 package com.company.reconone.common.domain;
 
 import jakarta.persistence.*;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.util.Map;
 
 @Entity
+@Data
+@NoArgsConstructor
+@EqualsAndHashCode
+@ToString
 public class FileProcessingInfo implements ProcessingInfo {
 
     @Id
@@ -18,10 +26,10 @@ public class FileProcessingInfo implements ProcessingInfo {
     private Long timeTaken;
     private String status;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     private Map<String, Integer> recordsProcessed;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     private Map<String, Integer> recordsSkipped;
 
     @Lob
@@ -30,115 +38,12 @@ public class FileProcessingInfo implements ProcessingInfo {
     private String pipelineId;
     private String instanceId;
 
-    public FileProcessingInfo() {
-    }
-
-    @Override
-    public Long getStartTime() {
-        return startTime;
-    }
-
-    @Override
-    public Long getEndTime() {
-        return endTime;
-    }
-
-
-    @Override
-    public Long getTimeTaken() {
-        return timeTaken;
-    }
-
-
-    @Override
-    public String getStatus() {
-        return status;
-    }
-
-    @Override
-    public Map<String, Integer> getRecordsProcessed() {
-        return recordsProcessed;
-    }
-
-
-    @Override
-    public Map<String, Integer> getRecordsSkipped() {
-        return recordsSkipped;
-    }
-
-    @Override
-    public String getErrorStackTrace() {
-        return errorStackTrace;
-    }
-
-    @Override
-    public String getPipelineId() {
-        return pipelineId;
-    }
-
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getFileName() {
-        return fileName;
-    }
-
-    public void setFileName(String fileName) {
-        this.fileName = fileName;
-    }
-
-    public Long getFileSize() {
-        return fileSize;
-    }
-
-    public void setFileSize(Long fileSize) {
-        this.fileSize = fileSize;
-    }
-
-    public void setStartTime(Long startTime) {
-        this.startTime = startTime;
-    }
-
     public void setEndTime(Long endTime) {
         this.endTime = endTime;
+        this.timeTaken = calculateTimeTaken();
     }
 
-    public void setTimeTaken(Long timeTaken) {
-        this.timeTaken = timeTaken;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public void setRecordsProcessed(Map<String, Integer> recordsProcessed) {
-        this.recordsProcessed = recordsProcessed;
-    }
-
-    public void setRecordsSkipped(Map<String, Integer> recordsSkipped) {
-        this.recordsSkipped = recordsSkipped;
-    }
-
-    public void setErrorStackTrace(String errorStackTrace) {
-        this.errorStackTrace = errorStackTrace;
-    }
-
-
-    public void setPipelineId(String pipelineId) {
-        this.pipelineId = pipelineId;
-    }
-
-    public String getInstanceId() {
-        return instanceId;
-    }
-
-    public void setInstanceId(String instanceId) {
-        this.instanceId = instanceId;
+    private Long calculateTimeTaken() {
+        return (this.startTime != null && this.endTime != null) ? this.endTime - this.startTime : null;
     }
 }

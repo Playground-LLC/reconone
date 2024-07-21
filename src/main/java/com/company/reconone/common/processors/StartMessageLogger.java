@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * Processor to initialize the message logger.
- *
+ * <p>
  * This processor initializes the message logger by setting the message ID, start time, and other relevant properties.
  */
 @Component

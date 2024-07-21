@@ -1,16 +1,12 @@
 package com.company.reconone.common.pipeline;
 
+import com.company.reconone.common.processors.ExceptionMessageLogger;
 import com.company.reconone.common.processors.MdcProcessor;
 import com.company.reconone.common.processors.ProcessedMessageLogger;
 import com.company.reconone.common.processors.StartMessageLogger;
-import com.company.reconone.common.processors.ExceptionMessageLogger;
+import lombok.RequiredArgsConstructor;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.model.OnExceptionDefinition;
-import org.apache.camel.spi.RouteController;
-import org.apache.camel.CamelContext;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 /**
@@ -20,28 +16,15 @@ import org.springframework.stereotype.Component;
  * Subclasses must implement kafkaTopic(), getProcessor(), and getPipelineName() to specify the Kafka topic, processor, and pipeline name.
  */
 @Component
+@RequiredArgsConstructor
 public abstract class BaseKafkaConsumerPipeline extends RouteBuilder {
 
+    protected final MdcProcessor mdcProcessor;
+    protected final StartMessageLogger startMessageLogger;
+    protected final ProcessedMessageLogger processedMessageLogger;
+    protected final ExceptionMessageLogger exceptionMessageLogger;
     @Value("${instance.id}")
     protected String instanceId;
-
-    @Autowired
-    protected MdcProcessor mdcProcessor;
-
-    @Autowired
-    protected StartMessageLogger startMessageLogger;
-
-    @Autowired
-    protected ProcessedMessageLogger processedMessageLogger;
-
-    @Autowired
-    protected ExceptionMessageLogger exceptionMessageLogger;
-
-    @Autowired
-    private ApplicationContext applicationContext;
-
-    @Autowired
-    private CamelContext camelContext;
 
     /**
      * Get the name of the pipeline.
@@ -71,7 +54,7 @@ public abstract class BaseKafkaConsumerPipeline extends RouteBuilder {
     public void configure() {
         configureExceptionHandling();
 
-        from(constructFromRoute())
+        from(constructKafkaConsumer())
                 .routeId(getPipelineName())
                 .process(startMessageLogger)
                 .process(mdcProcessor)
@@ -95,7 +78,7 @@ public abstract class BaseKafkaConsumerPipeline extends RouteBuilder {
      *
      * @return constructed URI
      */
-    private String constructFromRoute() {
+    protected String constructKafkaConsumer() {
         return "kafka:" + kafkaTopic();
     }
 }

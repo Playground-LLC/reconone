@@ -9,7 +9,7 @@ import java.util.UUID;
 
 /**
  * Processor that adds the pipelineId to the MDC context. The pipelineId is the ID of the pipeline that is processing the file.
- *
+ * <p>
  * The pipelineId is added to the MDC context so that it can be included in log messages.
  */
 @Component

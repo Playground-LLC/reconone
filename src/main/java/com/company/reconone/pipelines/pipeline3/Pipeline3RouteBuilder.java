@@ -1,27 +1,30 @@
 package com.company.reconone.pipelines.pipeline3;
 
 import com.company.reconone.common.pipeline.BaseFolderWatcherPipeline;
-import com.company.reconone.common.processors.BaseFileProcessor;
+import com.company.reconone.common.processors.*;
 import com.company.reconone.pipelines.PipelineNames;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 @Component(PipelineNames.PIPELINE_3)
 public class Pipeline3RouteBuilder extends BaseFolderWatcherPipeline {
 
-    private static final Logger logger = LoggerFactory.getLogger(Pipeline3RouteBuilder.class);
-
+    private final Pipeline3Processor pipeline3Processor;
     @Value("${pipeline3.source.folder}")
     private String sourceFolder;
-
     @Value("${pipeline3.target.folder}")
     private String targetFolder;
 
-    @Autowired
-    private Pipeline3Processor pipeline1Processor;
+    public Pipeline3RouteBuilder(MdcProcessor mdcProcessor,
+                                 StartFileLogger startFileLogger,
+                                 ProcessedFileLogger processedFileLogger,
+                                 ApplicationContext applicationContext,
+                                 ExceptionFileLogger exceptionFileLogger,
+                                 Pipeline3Processor pipeline3Processor) {
+        super(mdcProcessor, startFileLogger, processedFileLogger, applicationContext, exceptionFileLogger);
+        this.pipeline3Processor = pipeline3Processor;
+    }
 
     @Override
     public String getPipelineName() {
@@ -30,7 +33,7 @@ public class Pipeline3RouteBuilder extends BaseFolderWatcherPipeline {
 
     @Override
     public BaseFileProcessor getProcessor() {
-        return pipeline1Processor;
+        return pipeline3Processor;
     }
 
     @Override

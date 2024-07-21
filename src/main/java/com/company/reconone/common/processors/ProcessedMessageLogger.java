@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * Processor that logs information about a processed message.
- *
+ * <p>
  * This processor logs information about a processed message, including the message ID, start time, end time, time taken, and number of records processed and skipped.
  */
 @Component

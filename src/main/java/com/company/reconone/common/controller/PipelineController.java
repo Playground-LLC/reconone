@@ -7,13 +7,13 @@ import com.company.reconone.common.domain.ProcessingInfo;
 import com.company.reconone.common.repository.FileProcessingRepository;
 import com.company.reconone.common.repository.MessageProcessingRepository;
 import com.company.reconone.common.repository.PipelineRepository;
+import lombok.RequiredArgsConstructor;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Route;
 import org.apache.camel.ServiceStatus;
 import org.apache.camel.spi.RouteController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -28,22 +28,14 @@ import java.util.stream.Collectors;
  */
 @Controller
 @RequestMapping("/pipelines")
+@RequiredArgsConstructor
 public class PipelineController {
 
+    private final CamelContext camelContext;
+    private final PipelineRepository pipelineStatusRepository;
+    private final FileProcessingRepository fileProcessingRepository;
+    private final MessageProcessingRepository messageProcessingRepository;
     Logger log = LoggerFactory.getLogger(PipelineController.class);
-
-    @Autowired
-    private CamelContext camelContext;
-
-    @Autowired
-    private PipelineRepository pipelineStatusRepository;
-
-    @Autowired
-    private FileProcessingRepository fileProcessingRepository;
-
-    @Autowired
-    private MessageProcessingRepository messageProcessingRepository;
-
     @Value("${instance.id}")
     private String instanceId;
 
@@ -138,7 +130,7 @@ public class PipelineController {
     /**
      * This method fetches the processing statistics for a specific pipeline.
      *
-     * @param id Pipeline ID
+     * @param pipelineId Pipeline ID
      * @return Template name for the statistics view
      */
     @GetMapping("/statistics/{pipelineId}")

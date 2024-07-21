@@ -3,11 +3,11 @@ package com.company.reconone.common.config;
 import com.company.reconone.common.domain.Pipeline;
 import com.company.reconone.common.repository.PipelineRepository;
 import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import org.apache.camel.CamelContext;
 import org.apache.camel.builder.RouteBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -27,23 +27,15 @@ import java.util.stream.Collectors;
  * and starting the routes based on the startPriority and enabledPipelines configurations.
  */
 @Component
+@RequiredArgsConstructor
 public class CamelConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(CamelConfig.class);
-
-    @Autowired
-    private CamelContext camelContext;
-
-    @Autowired
-    private PipelineRepository pipelineStatusRepository;
-
-    @Autowired
-    private PipelineScanner pipelineScanner;
-
-    @Autowired
     @Qualifier("transactionManager")
-    protected PlatformTransactionManager txManager;
-
+    protected final PlatformTransactionManager txManager;
+    private final CamelContext camelContext;
+    private final PipelineRepository pipelineStatusRepository;
+    private final PipelineScanner pipelineScanner;
     // Priority for starting pipelines, either from configuration or database
     @Value("${pipelines.startPriority}")
     private String startPriority;

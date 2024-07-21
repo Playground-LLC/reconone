@@ -4,11 +4,11 @@ import com.company.reconone.common.processors.ExceptionFileLogger;
 import com.company.reconone.common.processors.MdcProcessor;
 import com.company.reconone.common.processors.ProcessedFileLogger;
 import com.company.reconone.common.processors.StartFileLogger;
+import lombok.RequiredArgsConstructor;
 import org.apache.camel.AggregationStrategy;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
@@ -25,26 +25,22 @@ import org.springframework.stereotype.Component;
  * The route is also configured to add the pipelineId to the MDC context using the MdcProcessor, log the start and end of the file processing using the StartFileLogger and ProcessedFileLogger processors.
  * <p>
  * The sourceFolder(), destinationFolder(), and fileExtension() methods must be implemented by subclasses to specify the source folder, destination folder, and file extension for the pipeline.
- *
+ * <p>
  * The pipeline can also implement configure() optionally to add additional route configuration.
  */
 @Component
+@RequiredArgsConstructor
 public abstract class BaseFolderWatcherPipeline extends RouteBuilder {
 
     private static final long DELAY_READ_FILE = 5000; // Delay between file reads
+    protected final MdcProcessor mdcProcessor;
+    protected final StartFileLogger startFileLogger;
+    protected final ProcessedFileLogger processedFileLogger;
+    protected final ApplicationContext applicationContext;
+    protected final ExceptionFileLogger exceptionFileLogger;
 
     @Value("${instance.id}")
     protected String instanceId;
-    @Autowired
-    protected MdcProcessor mdcProcessor;
-    @Autowired
-    protected StartFileLogger startFileLogger;
-    @Autowired
-    protected ProcessedFileLogger processedFileLogger;
-    @Autowired
-    private ApplicationContext applicationContext;
-    @Autowired
-    protected ExceptionFileLogger exceptionFileLogger;
 
     /**
      * Get the name of the pipeline.
@@ -72,42 +68,55 @@ public abstract class BaseFolderWatcherPipeline extends RouteBuilder {
      *
      * @return in-progress folder path
      */
-    public String processingFolder() { return "inprogress"; }
+    public String processingFolder() {
+        return "inprogress";
+    }
 
     /**
      * Get the destination folder for processed files.
      *
      * @return destination folder path
      */
-    public String destinationFolder() { return "processed"; }
+    public String destinationFolder() {
+        return "processed";
+    }
 
     /**
      * Get the folder for files with errors.
      *
      * @return error folder path
      */
-    public String errorFolder() { return "error"; }
+    public String errorFolder() {
+        return "error";
+    }
 
     /**
      * Get the file extension to watch for.
      *
      * @return file extension
      */
-    public String fileExtension() { return null; }
+    public String fileExtension() {
+        return null;
+    }
 
     /**
      * Get the splitter for chunking files.
      *
      * @return splitter string
      */
-    public String splitter() { return "\n"; }
+    public String splitter() {
+        return "\n";
+    }
 
     /**
      * Get the chunk size for splitting files.
      *
      * @return chunk size
      */
-    public int chunkSize() { return 0; }
+    public int chunkSize() {
+        return 0;
+    }
+
     /**
      * Configure the Camel route to watch, process, and move files.
      */

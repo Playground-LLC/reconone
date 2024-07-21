@@ -37,6 +37,9 @@ camel:
     tracing: false
   springboot:
     main-run-controller: true
+  component:
+    kafka:
+      brokers: ${BOOTSTRAP_SERVERS:localhost:9092}
 
 instance:
   id: instance1 # Unique ID for this instance

@@ -6,8 +6,11 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.util.Optional;
+
+import static com.company.reconone.common.processors.CommonConstants.*;
 
 /**
  * Processor that logs information about a processed file.
@@ -18,8 +21,11 @@ import org.springframework.stereotype.Component;
 public class ProcessedFileLogger implements Processor {
     private static final Logger logger = LoggerFactory.getLogger(ProcessedFileLogger.class);
 
-    @Autowired
-    private FileProcessingRepository fileProcessingRepository;
+    private final FileProcessingRepository fileProcessingRepository;
+
+    public ProcessedFileLogger(FileProcessingRepository fileProcessingRepository) {
+        this.fileProcessingRepository = fileProcessingRepository;
+    }
 
     @Override
     public void process(Exchange exchange) {
@@ -33,27 +39,39 @@ public class ProcessedFileLogger implements Processor {
      */
     private void logFileProcessingCompletion(Exchange exchange) {
         long endTime = System.currentTimeMillis();
-        long startTime = exchange.getProperty("startTime", Long.class);
+        Long startTime = exchange.getProperty(START_TIME_PROPERTY, Long.class);
+        startTime = Optional.ofNullable(startTime).orElse(0L);
         long timeTaken = endTime - startTime;
-        String fileName = exchange.getProperty("fileName", String.class);
-        long fileSize = exchange.getProperty("fileSize", Long.class);
-        Long fileProcessingId = exchange.getProperty("fileProcessingId", Long.class);
 
-        RecordCounter recordCounter = exchange.getProperty("recordCounter", RecordCounter.class);
+        String fileName = exchange.getProperty(FILE_NAME_PROPERTY, String.class);
+        fileName = Optional.ofNullable(fileName).orElse("Unknown");
+
+        Long fileSize = exchange.getProperty(FILE_SIZE_PROPERTY, Long.class);
+        fileSize = Optional.ofNullable(fileSize).orElse(0L);
+
+        Long fileProcessingId = exchange.getProperty(FILE_PROCESSING_ID_PROPERTY, Long.class);
+        fileProcessingId = Optional.ofNullable(fileProcessingId).orElse(0L);
+
+        RecordCounter recordCounter = exchange.getProperty(RECORD_COUNTER_PROPERTY, RecordCounter.class);
+        recordCounter = Optional.ofNullable(recordCounter).orElse(new RecordCounter());
 
         logger.info("File processing completed. File: {}, Size: {}, Start time: {}, End time: {}, Time taken: {}, Records processed: {}, Records skipped: {}",
                 fileName, fileSize, startTime, endTime, timeTaken,
                 recordCounter.getAllRecordsProcessed(), recordCounter.getAllRecordsSkipped());
 
-        // Update database
-        FileProcessingInfo fileProcessingInfo = fileProcessingRepository.findById(fileProcessingId)
-                .orElse(new FileProcessingInfo());
-        fileProcessingInfo.setEndTime(endTime);
-        fileProcessingInfo.setTimeTaken(timeTaken);
-        fileProcessingInfo.setStatus("COMPLETED");
-        fileProcessingInfo.setRecordsProcessed(recordCounter.getAllRecordsProcessed());
-        fileProcessingInfo.setRecordsSkipped(recordCounter.getAllRecordsSkipped());
+        try {
+            // Update database
+            FileProcessingInfo fileProcessingInfo = fileProcessingRepository.findById(fileProcessingId)
+                    .orElse(new FileProcessingInfo());
+            fileProcessingInfo.setEndTime(endTime);
+            fileProcessingInfo.setTimeTaken(timeTaken);
+            fileProcessingInfo.setStatus("COMPLETED");
+            fileProcessingInfo.setRecordsProcessed(recordCounter.getAllRecordsProcessed());
+            fileProcessingInfo.setRecordsSkipped(recordCounter.getAllRecordsSkipped());
 
-        fileProcessingRepository.save(fileProcessingInfo);
+            fileProcessingRepository.save(fileProcessingInfo);
+        } catch (Exception e) {
+            logger.error("Error updating FileProcessingInfo in the database for file: {}", fileName, e);
+        }
     }
 }

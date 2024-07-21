@@ -4,6 +4,7 @@ import com.company.reconone.common.processors.BaseFileProcessor;
 import com.company.reconone.integration.ETLKafkaService;
 import com.company.reconone.mongo.TransformedData;
 import com.company.reconone.service.ProcessedDataService;
+import lombok.RequiredArgsConstructor;
 import org.apache.camel.Exchange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,21 +14,15 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class Pipeline1Processor extends BaseFileProcessor {
 
-    @Autowired
-    private ProcessedDataService processedDataService;
-
-    @Autowired
-    private MongoTemplate mongoTemplate;
-
-    @Autowired
-    private KafkaTemplate<String, String> kafkaTemplate;
-
-    @Autowired
-    private ETLKafkaService etlKafkaService;
-
     private static final Logger logger = LoggerFactory.getLogger(Pipeline1Processor.class);
+
+    private final ProcessedDataService processedDataService;
+    private final MongoTemplate mongoTemplate;
+    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final ETLKafkaService etlKafkaService;
 
     @Override
     public void processFile(Exchange exchange) {

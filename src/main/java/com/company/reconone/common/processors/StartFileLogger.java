@@ -1,15 +1,17 @@
 package com.company.reconone.common.processors;
 
 import com.company.reconone.common.domain.FileProcessingInfo;
-import com.company.reconone.common.domain.Pipeline;
-import com.company.reconone.common.domain.PipelineId;
 import com.company.reconone.common.repository.FileProcessingRepository;
-import com.company.reconone.common.repository.PipelineRepository;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import java.util.Optional;
+
+import static com.company.reconone.common.processors.CommonConstants.*;
 
 /**
  * Processor to initialize the file logger.
@@ -18,18 +20,19 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class StartFileLogger implements Processor {
+    private static final Logger logger = LoggerFactory.getLogger(StartFileLogger.class);
 
-    @Value("${instance.id}")
-    protected String instanceId;
-    @Autowired
-    private PipelineRepository pipelineRepository;
-    @Autowired
-    private FileProcessingRepository fileProcessingRepository;
+    private final FileProcessingRepository fileProcessingRepository;
+    private final String instanceId;
+
+    public StartFileLogger(FileProcessingRepository fileProcessingRepository, @Value("${instance.id}") String instanceId) {
+        this.fileProcessingRepository = fileProcessingRepository;
+        this.instanceId = instanceId;
+    }
 
     @Override
     public void process(Exchange exchange) {
         initializeFileLoggingProperties(exchange);
-
         resetRecordCounter(exchange);
     }
 
@@ -39,26 +42,30 @@ public class StartFileLogger implements Processor {
      * @param exchange the Camel exchange containing the file data
      */
     private void initializeFileLoggingProperties(Exchange exchange) {
-        String fileName = exchange.getIn().getHeader("CamelFileName", String.class);
-        long fileSize = exchange.getIn().getHeader("CamelFileLength", Long.class);
+        String fileName = Optional.ofNullable(exchange.getIn().getHeader(CAMEL_FILE_NAME_HEADER, String.class)).orElse("Unknown");
+        Long fileSize = Optional.ofNullable(exchange.getIn().getHeader(CAMEL_FILE_LENGTH_HEADER, Long.class)).orElse(0L);
         long startTime = System.currentTimeMillis();
 
-        exchange.setProperty("fileName", fileName);
-        exchange.setProperty("fileSize", fileSize);
-        exchange.setProperty("startTime", startTime);
+        setExchangeProperty(exchange, FILE_NAME_PROPERTY, fileName);
+        setExchangeProperty(exchange, FILE_SIZE_PROPERTY, fileSize);
+        setExchangeProperty(exchange, START_TIME_PROPERTY, startTime);
 
         // Save to database
-        FileProcessingInfo fileProcessingInfo = new FileProcessingInfo();
-        fileProcessingInfo.setFileName(fileName);
-        fileProcessingInfo.setFileSize(fileSize);
-        fileProcessingInfo.setStartTime(startTime);
-        fileProcessingInfo.setStatus("STARTED");
-        fileProcessingInfo.setPipelineId(exchange.getFromRouteId());
-        fileProcessingInfo.setInstanceId(instanceId);
+        try {
+            FileProcessingInfo fileProcessingInfo = new FileProcessingInfo();
+            fileProcessingInfo.setFileName(fileName);
+            fileProcessingInfo.setFileSize(fileSize);
+            fileProcessingInfo.setStartTime(startTime);
+            fileProcessingInfo.setStatus("STARTED");
+            fileProcessingInfo.setPipelineId(exchange.getFromRouteId());
+            fileProcessingInfo.setInstanceId(instanceId);
 
-        fileProcessingRepository.save(fileProcessingInfo);
+            fileProcessingRepository.save(fileProcessingInfo);
 
-        exchange.setProperty("fileProcessingId", fileProcessingInfo.getId());
+            setExchangeProperty(exchange, FILE_PROCESSING_ID_PROPERTY, fileProcessingInfo.getId());
+        } catch (Exception e) {
+            logger.error("Error saving FileProcessingInfo to the database for file: {}", fileName, e);
+        }
     }
 
     /**
@@ -68,7 +75,17 @@ public class StartFileLogger implements Processor {
      */
     private void resetRecordCounter(Exchange exchange) {
         RecordCounter recordCounter = new RecordCounter();
-        recordCounter.reset();
-        exchange.setProperty("recordCounter", recordCounter);
+        setExchangeProperty(exchange, RECORD_COUNTER_PROPERTY, recordCounter);
+    }
+
+    /**
+     * Sets a property in the exchange.
+     *
+     * @param exchange the Camel exchange
+     * @param key      the property key
+     * @param value    the property value
+     */
+    private void setExchangeProperty(Exchange exchange, String key, Object value) {
+        exchange.setProperty(key, value);
     }
 }
