@@ -1,0 +1,6 @@
+# Configuration for pipeline1
+pipeline1:
+  source:
+    folder: inputFolder
+  target:
+    folder: outputFolder

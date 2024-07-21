@@ -10,6 +10,12 @@ This project provides an Apache Camel-based ETL pipeline framework designed for 
 - **REST API**: Pipelines can be started and stopped using a REST API.
 - **Auto Start/Stop**: Pipelines can automatically start and stop based on configuration or database settings.
 
+## Getting Started
+
+Start the application by running the command:
+```shell
+java -jar etl.jar --spring.config.additional-location=file:src/main/resources/pipelineconfigs/*/
+```
 
 ## Pipeline Creation
 
@@ -21,6 +27,10 @@ This project provides an Apache Camel-based ETL pipeline framework designed for 
     - Package: `com.company.etl.pipeline.reconone.pipelines.pipeline2`
 - **Large File Processing**: Batch processing for large files.
     - Package: `com.company.etl.pipeline.reconone.pipelines.pipeline3`
+
+### Pipeline Configuration
+
+You can find the pipeline configuration in path: src/main/resources/pipelineconfigs/`pipelinename`/application.yml
 
 ## Folder Watcher Pipeline
 

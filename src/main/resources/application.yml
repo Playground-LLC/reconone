@@ -52,26 +52,6 @@ pipelines:
   # List of pipelines to auto start
   start: pipeline1, pipeline2, pipeline3
 
-# Configuration for pipeline1
-pipeline1:
-  source:
-    folder: inputFolder
-  target:
-    folder: outputFolder
-
-# Configuration for pipeline2
-pipeline2:
-  source:
-    kafka:
-      topic: myTopic
-
-# Configuration for pipeline3
-pipeline3:
-  source:
-    folder: inputFolderChunk
-  target:
-    folder: outputFolderChunk
-
 management:
   endpoint:
     health:

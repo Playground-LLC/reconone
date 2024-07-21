@@ -1,0 +1,5 @@
+# Configuration for pipeline2
+pipeline2:
+  source:
+    kafka:
+      topic: myTopic

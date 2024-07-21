@@ -1,0 +1,6 @@
+# Configuration for pipeline3
+pipeline3:
+  source:
+    folder: inputFolderChunk
+  target:
+    folder: outputFolderChunk
